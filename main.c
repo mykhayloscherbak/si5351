@@ -100,7 +100,7 @@ static uint8_t sendByte(const uint8_t _byte)
 {
     for (uint8_t bit = 0 ; bit < 8 ; bit++)
     {
-        if ( 0 == ((_byte << bit) & 0x80))
+        if ( 0 == (_byte & (0x80 >> bit)))
         {
             SDADown();
         }
@@ -128,20 +128,16 @@ static inline void sendRegData(void)
 {
     for (uint8_t reg = 0; reg < SI5351A_REVB_REG_CONFIG_NUM_REGS; reg++)
     {
-        uint8_t error = 0;
+        uint8_t error = 0xFF;
         start();
         waitTimer();
-        if (0 == sendByte(ADDR << 1))
+        if (
+                (0 != sendByte(ADDR << 1))  &&
+                (0 != sendByte(si5351a_revb_registers[reg].address)) &&
+                (0 != sendByte(si5351a_revb_registers[reg].value))
+            )
         {
-            error = 0xff;
-        }
-        if ((0 == error) && (0 == sendByte(si5351a_revb_registers[reg].address)))
-        {
-            error = 0xff;
-        }
-        if ((0 == error) && (0 == sendByte(si5351a_revb_registers[reg].value)))
-        {
-            error = 0xff;
+            error = 0;
         }
         stop();
         waitTimer();
@@ -178,7 +174,7 @@ void main()
 
     while(1)
     {
-        sleep_cpu();
+        sleep_cpu(); /* going to sleep for minimising noise */
     }
 
 }
